@@ -15,6 +15,7 @@ export default function Home() {
   const [allRecommendations, setAllRecommendations] = useState([]);
   const [displayCount, setDisplayCount] = useState(2);
   const [showWarning, setShowWarning] = useState(false);
+  const [modalWine, setModalWine] = useState(null);
 
   useEffect(() => {
     fetch(
@@ -161,6 +162,35 @@ export default function Home() {
     setDisplayCount((prev) => prev + 3);
   };
 
+  // Funciones para el modal de la ficha del vino
+  const openModal = (wine) => {
+    setModalWine(wine);
+  };
+
+  const closeModal = () => {
+    setModalWine(null);
+  };
+
+  const handlePrevious = () => {
+    if (!modalWine) return;
+    const index = allRecommendations.findIndex(
+      (wine) => wine.Nombre === modalWine.Nombre
+    );
+    if (index > 0) {
+      setModalWine(allRecommendations[index - 1]);
+    }
+  };
+
+  const handleNext = () => {
+    if (!modalWine) return;
+    const index = allRecommendations.findIndex(
+      (wine) => wine.Nombre === modalWine.Nombre
+    );
+    if (index < allRecommendations.length - 1) {
+      setModalWine(allRecommendations[index + 1]);
+    }
+  };
+
   // Calcular el puntaje máximo entre todas las recomendaciones para normalizar la barra
   const maxScore =
     allRecommendations.length > 0
@@ -168,7 +198,7 @@ export default function Home() {
       : 0;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-pink-100 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-pink-100 p-2">
       <h1 className="text-3xl font-bold text-pink-700 mb-1">Airen</h1>
       <h2 className="text-1xl text-pink-700 mb-4">
         La bodega de Ángela Rodríguez
@@ -292,7 +322,7 @@ export default function Home() {
       {/* Modal de advertencia */}
       {showWarning && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+          <div className="bg-white p-4 rounded-lg shadow-lg text-center">
             <p className="text-pink-500 text-lg font-semibold">
               Dame alguna pista para que te pueda ayudar
             </p>
@@ -306,9 +336,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* Recomendaciones  flex items-center gap-3   -  w-8 h-8 object-cover*/}
+      {/* Recomendaciones */}
       {allRecommendations.length > 0 && (
-        <div className="mt-6 bg-white p-6 rounded-lg shadow-lg border border-pink-300 w-full max-w-md">
+        <div className="mt-6 bg-white p-4 rounded-lg shadow-lg border border-pink-300 w-full max-w-md">
           <ul className="mt-2">
             {allRecommendations.slice(0, displayCount).map((wine, index) => (
               <li key={index} className="mt-4">
@@ -318,14 +348,20 @@ export default function Home() {
                     alt={wine.Tipo}
                     className="w-8 h-8 object-cover"
                   />
-                  <p className="text-pink-800 font-semibold">{wine.Nombre}</p>
+                  {/* Nombre clickable para abrir el modal */}
+                  <p
+                    className="text-pink-800 font-semibold cursor-pointer underline"
+                    onClick={() => openModal(wine)}
+                  >
+                    {wine.Nombre}
+                  </p>
                 </div>
 
-                  <p className="text-sm text-pink-500 italic mt-1">
+                <p className="text-sm text-pink-500 italic mt-1">
                   {wine.Descripcion ? wine.Descripcion : ""}
                 </p>
-                
-                  <p className="text-sm text-gray-600 mt-1">
+
+                <p className="text-sm text-gray-600 mt-1">
                   Precio: {wine.Precio ? `${wine.Precio} €` : "No especificado"}
                 </p>
 
@@ -354,6 +390,103 @@ export default function Home() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal de ficha del vino */}
+      {modalWine && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          {/* Contenedor del modal */}
+          <div className="bg-white p-2 rounded-lg shadow-lg max-w-xl w-full">
+            {/* TÍTULO centrado */}
+            <h3 className="text-xl font-bold text-pink-700 mb-1 text-center">
+              {modalWine.Nombre}
+            </h3>
+            {/* Fila para imagen + info */}
+            <div className="flex flex-col md:flex-row gap-1">
+              {/* Columna 1: Imagen */}
+              <div className="flex-shrink-0">
+                <div className="w-24 h-24 mt-2">
+                  <img
+                    src={modalWine.Imagen || getWineImage(modalWine.Tipo)}
+                    alt={modalWine.Nombre}
+                    className="w-full h-full object-contain rounded"
+                  />
+                </div>
+              </div>
+              {/* Columna 2: Información */}
+              <div>
+                <p className="text-sm mb-0">
+                  <strong className="text-black font-bold">Marida con:</strong>{" "}
+                  <span className="text-pink-500 font-normal">
+                    {[modalWine["Comida 1"], modalWine["Comida 2"]]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
+                </p>
+                <p className="text-sm mb-0">
+                  <strong className="text-black font-bold">Tipo:</strong>{" "}
+                  <span className="text-pink-500 font-normal">
+                    {modalWine.Tipo}
+                  </span>
+                </p>
+                <p className="text-sm mb-0">
+                  <strong className="text-black font-bold">
+                    Denominación de origen:
+                  </strong>{" "}
+                  <span className="text-pink-500 font-normal">
+                    {modalWine["Denominación"]}
+                  </span>
+                </p>
+                <p className="text-sm mb-0">
+                  <strong className="text-black font-bold">
+                    Descripción:
+                  </strong>{" "}
+                  <span className="text-pink-500 font-normal">
+                    {modalWine.Descripcion}
+                  </span>
+                </p>
+                <p className="text-sm">
+                  <strong className="text-black font-bold">Precio:</strong>{" "}
+                  <span className="text-pink-500 font-normal">
+                    {modalWine.Precio ? `${modalWine.Precio} €` : "No especificado"}
+                  </span>
+                </p>
+              </div>
+            </div>
+            {/* Botones centrados */}
+            <div className="flex justify-center mt-3 space-x-4">
+              {(() => {
+                const currentIndex = allRecommendations.findIndex(
+                  (wine) => wine.Nombre === modalWine.Nombre
+                );
+                return (
+                  <>
+                    <button
+                      onClick={handlePrevious}
+                      disabled={currentIndex === 0}
+                      className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600"
+                    >
+                      Cerrar
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      disabled={currentIndex === allRecommendations.length - 1}
+                      className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      →
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
     </div>
