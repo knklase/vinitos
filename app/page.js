@@ -8,11 +8,12 @@ export default function Home() {
     taste: "",
     foodPairing: [],
     type: "",
+    origin: "",
     budget: "",
-    origin: "", // Nueva propiedad para la denominación de origen
   });
   const [wines, setWines] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
+  const [allRecommendations, setAllRecommendations] = useState([]);
+  const [displayCount, setDisplayCount] = useState(2);
   const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,6 @@ export default function Home() {
           : [...prev.foodPairing, value],
       }));
     } else if (name === "type") {
-      // Al cambiar el tipo, reiniciamos la denominación de origen
       setPreferences((prev) => ({
         ...prev,
         type: value,
@@ -60,31 +60,42 @@ export default function Home() {
       !preferences.taste &&
       !preferences.foodPairing.length &&
       !preferences.type &&
-      !preferences.budget
+      !preferences.budget &&
+      !preferences.origin
     ) {
       setShowWarning(true);
       return;
     }
-  
+
     const scoredWines = wines.map((wine) => {
       let score = 0;
-  
-      const sabor = wine.Sabor ? wine.Sabor.trim().toLowerCase() : "";
-      const comida = wine.Comida ? wine.Comida.trim().toLowerCase() : "";
+
+      const gusto = wine.Gusto ? wine.Gusto.trim().toLowerCase() : "";
+      const comida1 = wine["Comida 1"]
+        ? wine["Comida 1"].trim().toLowerCase()
+        : "";
+      const comida2 = wine["Comida 2"]
+        ? wine["Comida 2"].trim().toLowerCase()
+        : "";
       const tipo = wine.Tipo ? wine.Tipo.trim().toLowerCase() : "";
+      const denominacion = wine["Denominación"]
+        ? wine["Denominación"].trim().toLowerCase()
+        : "";
       const presupuesto = wine.Presupuesto
         ? wine.Presupuesto.trim().toLowerCase()
         : "";
-  
-      if (sabor === preferences.taste.trim().toLowerCase()) score++;
-      if (
-        preferences.foodPairing.some((food) =>
-          comida.includes(food.trim().toLowerCase())
-        )
-      )
-        score++;
-  
-      // Solo se suma el score del tipo si NO es "Sin preferencia"
+
+      // Comparar gusto
+      if (gusto === preferences.taste.trim().toLowerCase()) score++;
+
+      // Comparar "para acompañar" (suma en ambas columnas)
+      preferences.foodPairing.forEach((food) => {
+        const f = food.trim().toLowerCase();
+        if (comida1.includes(f)) score++;
+        if (comida2.includes(f)) score++;
+      });
+
+      // Comparar tipo (solo si no es "Sin preferencia")
       if (
         preferences.type &&
         preferences.type.trim().toLowerCase() !== "sin preferencia" &&
@@ -92,14 +103,27 @@ export default function Home() {
       ) {
         score++;
       }
-  
+
+      // Comparar denominación de origen
+      if (
+        preferences.origin &&
+        denominacion === preferences.origin.trim().toLowerCase()
+      ) {
+        score++;
+      }
+
+      // Comparar presupuesto
       if (presupuesto === preferences.budget.trim().toLowerCase()) score++;
-  
+
+      // Sumar el extra de la columna "Recomendación"
+      const extra = parseInt(wine["Recomendación"], 10);
+      score += isNaN(extra) ? 0 : extra;
+
       console.log(`Vino: ${wine.Nombre}, Score: ${score}`);
       return { ...wine, score };
     });
-  
-    // Si el usuario eligió un tipo específico, filtramos los vinos para recomendar solo ese tipo.
+
+    // Filtrar por tipo si se ha seleccionado uno específico (que no sea "Sin preferencia")
     let filteredWines = scoredWines;
     if (
       preferences.type &&
@@ -112,11 +136,12 @@ export default function Home() {
             preferences.type.trim().toLowerCase()
       );
     }
-  
+
+    // Ordenar vinos de mayor a menor puntuación
     filteredWines.sort((a, b) => b.score - a.score);
-    setRecommendations(filteredWines.slice(0, 3)); // top 2 recomendaciones
+    setAllRecommendations(filteredWines);
+    setDisplayCount(2);
   };
-  
 
   const closeWarning = () => {
     setShowWarning(false);
@@ -131,6 +156,16 @@ export default function Home() {
     if (lowerType === "espumoso") return "/images/espumoso.png";
     return "/images/desconocido.png";
   };
+
+  const showMore = () => {
+    setDisplayCount((prev) => prev + 3);
+  };
+
+  // Calcular el puntaje máximo entre todas las recomendaciones para normalizar la barra
+  const maxScore =
+    allRecommendations.length > 0
+      ? Math.max(...allRecommendations.map((wine) => wine.score))
+      : 0;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-pink-100 p-4">
@@ -152,7 +187,7 @@ export default function Home() {
           onChange={handleChange}
           className="w-full p-2 mb-4 border rounded border-pink-400 text-black appearance-none"
         >
-          <option value="">Selecciona...</option>
+          <option value="">¿Cómo te gustan los vinos?</option>
           <option value="seco">Seco</option>
           <option value="afrutado">Afrutado</option>
           <option value="fresco">Fresco</option>
@@ -181,16 +216,14 @@ export default function Home() {
           onChange={handleChange}
           className="w-full p-2 mb-4 border rounded border-pink-400 text-black appearance-none"
         >
-          <option value="">Selecciona...</option>
+          <option value="">¿Qué tipo prefieres?</option>
           <option value="Sin preferencia">Sin preferencia</option>
           <option value="tinto">Tinto</option>
           <option value="blanco">Blanco</option>
           <option value="rosado">Rosado</option>
           <option value="espumoso">Espumoso</option>
-          
         </select>
 
-        {/* Nuevo desplegable "Denominación de origen:" */}
         <label className="block mb-2 text-pink-700">
           Denominación de origen:
         </label>
@@ -199,37 +232,39 @@ export default function Home() {
           onChange={handleChange}
           value={preferences.origin}
           disabled={
-            !["tinto", "blanco", "espumoso", "rosado"].includes(preferences.type)
+            !["tinto", "blanco", "espumoso", "rosado"].includes(
+              preferences.type
+            )
           }
           className="w-full p-2 mb-4 border rounded border-pink-400 text-black appearance-none"
         >
-          <option value="">Selecciona...</option>
+          <option value="">Selecciona antes el tipo.</option>
           {preferences.type === "tinto" && (
             <>
-              <option value="Alicante">Alicante</option>
-              <option value="Ribera">Ribera</option>
-              <option value="Rioja">Rioja</option>
-              <option value="Internacional">Internacional</option>
+              <option value="alicante">Alicante</option>
+              <option value="ribera">Ribera</option>
+              <option value="rioja">Rioja</option>
+              <option value="internacional">Internacional</option>
             </>
           )}
           {preferences.type === "blanco" && (
             <>
-              <option value="Alicante">Alicante</option>
-              <option value="Rueda">Rueda</option>
-              <option value="Albariño">Albariño</option>
-              <option value="Internacional">Internacional</option>
+              <option value="alicante">Alicante</option>
+              <option value="rueda">Rueda</option>
+              <option value="albariño">Albariño</option>
+              <option value="internacional">Internacional</option>
             </>
           )}
           {preferences.type === "espumoso" && (
             <>
-              <option value="Cava">Cava</option>
-              <option value="Champange">Champange</option>
+              <option value="cava">Cava</option>
+              <option value="champange">Champange</option>
             </>
           )}
           {preferences.type === "rosado" && (
             <>
-              <option value="Grenache">Grenache</option>
-              <option value="Syrah">Syrah</option>
+              <option value="grenache">Grenache</option>
+              <option value="syrah">Syrah</option>
             </>
           )}
         </select>
@@ -240,7 +275,7 @@ export default function Home() {
           onChange={handleChange}
           className="w-full p-2 mb-4 border rounded border-pink-400 text-black appearance-none"
         >
-          <option value="">Selecciona...</option>
+          <option value="">¿Qué rango de precios?</option>
           <option value="económico">Económico</option>
           <option value="medio">Medio</option>
           <option value="premium">Premium</option>
@@ -271,11 +306,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Recomendaciones */}
-      {recommendations.length > 0 && (
+      {/* Recomendaciones  flex items-center gap-3   -  w-8 h-8 object-cover*/}
+      {allRecommendations.length > 0 && (
         <div className="mt-6 bg-white p-6 rounded-lg shadow-lg border border-pink-300 w-full max-w-md">
           <ul className="mt-2">
-            {recommendations.map((wine, index) => (
+            {allRecommendations.slice(0, displayCount).map((wine, index) => (
               <li key={index} className="mt-4">
                 <div className="flex items-center gap-3">
                   <img
@@ -286,25 +321,39 @@ export default function Home() {
                   <p className="text-pink-800 font-semibold">{wine.Nombre}</p>
                 </div>
 
-                {/* Mostrar el precio en euros */}
-                <p className="text-sm text-gray-600 mt-1">
-                  Precio: {wine.Precio ? `${wine.Precio} €` : "No especificado"}
-                </p>
-
-                {/* Mostrar la descripción en cursiva y color rosita */}
-                <p className="text-sm text-pink-500 italic mt-1">
+                  <p className="text-sm text-pink-500 italic mt-1">
                   {wine.Descripcion ? wine.Descripcion : ""}
+                </p>
+                
+                  <p className="text-sm text-gray-600 mt-1">
+                  Precio: {wine.Precio ? `${wine.Precio} €` : "No especificado"}
                 </p>
 
                 <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
                   <div
                     className="bg-pink-500 h-3 rounded-full"
-                    style={{ width: `${(wine.score / 4) * 100}%` }}
+                    style={{
+                      width: `${
+                        maxScore > 0
+                          ? Math.min((wine.score / maxScore) * 100, 100)
+                          : 0
+                      }%`,
+                    }}
                   ></div>
                 </div>
               </li>
             ))}
           </ul>
+          {displayCount < allRecommendations.length && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={showMore}
+                className="w-1/2 bg-pink-500 text-white p-3 rounded hover:bg-pink-600"
+              >
+                MUÉSTRAME MÁS
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
