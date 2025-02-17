@@ -16,6 +16,7 @@ export default function Home() {
   const [displayCount, setDisplayCount] = useState(2);
   const [showWarning, setShowWarning] = useState(false);
   const [modalWine, setModalWine] = useState(null);
+  const [enlargedImage, setEnlargedImage] = useState(null); // Nueva variable para imagen ampliada
 
   useEffect(() => {
     fetch(
@@ -227,7 +228,10 @@ export default function Home() {
         <label className="block mb-2 text-pink-700">Para acompañar:</label>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {["carnes", "pescado", "ensaladas", "mariscos"].map((food) => (
-            <label key={food} className="flex items-center space-x-2 text-pink-700">
+            <label
+              key={food}
+              className="flex items-center space-x-2 text-pink-700"
+            >
               <input
                 type="checkbox"
                 name="foodPairing"
@@ -235,7 +239,9 @@ export default function Home() {
                 onChange={handleChange}
                 className="text-pink-500"
               />
-              <span>{food.charAt(0).toUpperCase() + food.slice(1)}</span>
+              <span>
+                {food.charAt(0).toUpperCase() + food.slice(1)}
+              </span>
             </label>
           ))}
         </div>
@@ -348,9 +354,9 @@ export default function Home() {
                     alt={wine.Tipo}
                     className="w-8 h-8 object-cover"
                   />
-                  {/* Nombre clickable para abrir el modal */}
+                  {/* Se quita "underline" para no subrayar el nombre */}
                   <p
-                    className="text-pink-800 font-semibold cursor-pointer underline"
+                    className="text-pink-800 font-semibold cursor-pointer"
                     onClick={() => openModal(wine)}
                   >
                     {wine.Nombre}
@@ -407,17 +413,23 @@ export default function Home() {
               {/* Columna 1: Imagen */}
               <div className="flex-shrink-0">
                 <div className="w-24 h-24 mt-2">
+                  {/* Al hacer click en la imagen se abre el modal de imagen ampliada */}
                   <img
                     src={modalWine.Imagen || getWineImage(modalWine.Tipo)}
                     alt={modalWine.Nombre}
-                    className="w-full h-full object-contain rounded"
+                    className="w-full h-full object-contain rounded cursor-pointer"
+                    onClick={() =>
+                      setEnlargedImage(modalWine.Imagen || getWineImage(modalWine.Tipo))
+                    }
                   />
                 </div>
               </div>
               {/* Columna 2: Información */}
               <div>
                 <p className="text-sm mb-0">
-                  <strong className="text-black font-bold">Marida con:</strong>{" "}
+                  <strong className="text-black font-bold">
+                    Marida con:
+                  </strong>{" "}
                   <span className="text-pink-500 font-normal">
                     {[modalWine["Comida 1"], modalWine["Comida 2"]]
                       .filter(Boolean)
@@ -487,6 +499,16 @@ export default function Home() {
               })()}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal de imagen ampliada */}
+      {enlargedImage && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <img src={enlargedImage} alt="Imagen ampliada" className="max-w-full max-h-full" />
         </div>
       )}
     </div>
