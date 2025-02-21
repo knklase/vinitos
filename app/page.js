@@ -71,7 +71,7 @@ export default function Home() {
       !preferences.budget &&
       !preferences.origin
     ) {
-      setWarningMessage("Dame alguna pista para que te pueda ayudar");
+      setWarningMessage("Dame alguna pista para que te pueda ayudar. 😊");
       setShowWarning(true);
       return;
     }
@@ -86,10 +86,18 @@ export default function Home() {
       const gusto = wine.Gusto ? wine.Gusto.trim().toLowerCase() : "";
 
       // Obtener los valores exactos de "Comida 1" y "Comida 2" dividiéndolos por comas
-      const comida1 = wine["Comida 1"] ? wine["Comida 1"].trim().toLowerCase() : "";
-      const comida2 = wine["Comida 2"] ? wine["Comida 2"].trim().toLowerCase() : "";
-      const comida1Array = comida1 ? comida1.split(",").map(item => item.trim()) : [];
-      const comida2Array = comida2 ? comida2.split(",").map(item => item.trim()) : [];
+      const comida1 = wine["Comida 1"]
+        ? wine["Comida 1"].trim().toLowerCase()
+        : "";
+      const comida2 = wine["Comida 2"]
+        ? wine["Comida 2"].trim().toLowerCase()
+        : "";
+      const comida1Array = comida1
+        ? comida1.split(",").map((item) => item.trim())
+        : [];
+      const comida2Array = comida2
+        ? comida2.split(",").map((item) => item.trim())
+        : [];
 
       const tipo = wine.Tipo ? wine.Tipo.trim().toLowerCase() : "";
       const denominacionGrupo = wine["Denominacion Grupo"]
@@ -105,8 +113,8 @@ export default function Home() {
       // Coincidencia en "maridaje"
       preferences.foodPairing.forEach((food) => {
         const f = food.trim().toLowerCase();
-        if (comida1Array.map(s => s.toLowerCase()).includes(f)) score++;
-        if (comida2Array.map(s => s.toLowerCase()).includes(f)) score++;
+        if (comida1Array.map((s) => s.toLowerCase()).includes(f)) score++;
+        if (comida2Array.map((s) => s.toLowerCase()).includes(f)) score++;
       });
 
       // Coincidencia de tipo (si no es "sin preferencia")
@@ -123,7 +131,9 @@ export default function Home() {
         preferences.origin &&
         ["tinto", "blanco", "espumoso"].includes(tipo)
       ) {
-        if (denominacionGrupo === preferences.origin.trim().toLowerCase())
+        if (
+          denominacionGrupo === preferences.origin.trim().toLowerCase()
+        )
           score++;
       }
 
@@ -164,10 +174,19 @@ export default function Home() {
             preferences.budget.trim().toLowerCase()
       );
     }
-    // Ni "Denominacion" ni "Denominacion Grupo" se usan para filtrar
 
     // Ordenar por puntuación de mayor a menor
     filteredWines.sort((a, b) => b.score - a.score);
+
+    // Si no hay vinos con los filtros aplicados, mostrar ventana de advertencia
+    if (filteredWines.length === 0) {
+      setWarningMessage(
+        "Ningún vino con los filtros aplicados, modifica el tipo y/o rango de precio. 😇"
+      );
+      setShowWarning(true);
+      return;
+    }
+
     setAllRecommendations(filteredWines);
     setDisplayCount(2);
   };
@@ -179,7 +198,7 @@ export default function Home() {
       preferences.type.trim() === "" ||
       preferences.type.trim().toLowerCase() === "sin preferencia"
     ) {
-      setWarningMessage("Selecciona un tipo de vino, por favor");
+      setWarningMessage("Selecciona un tipo de vino para que te pueda ayudar. 🙂");
       setShowWarning(true);
       return;
     }
@@ -207,7 +226,7 @@ export default function Home() {
     if (!wineType) return "/images/desconocido.png";
     const lowerType = wineType.trim().toLowerCase();
     if (lowerType === "tinto") return "/images/tinto.png";
-    if (lowerType === "blanco") return "/images/blanco.png";    
+    if (lowerType === "blanco") return "/images/blanco.png";
     if (lowerType === "espumoso") return "/images/espumoso.png";
     if (lowerType === "rosado") return "/images/rosado.png";
     if (lowerType === "generoso") return "/images/generoso.png";
@@ -297,7 +316,9 @@ export default function Home() {
                 onChange={handleChange}
                 className="text-pink-500"
               />
-              <span>{food.charAt(0).toUpperCase() + food.slice(1)}</span>
+              <span>
+                {food.charAt(0).toUpperCase() + food.slice(1)}
+              </span>
             </label>
           ))}
         </div>
@@ -311,7 +332,7 @@ export default function Home() {
           <option value="">¿Qué tipo prefieres?</option>
           <option value="sin preferencia">Sin preferencia</option>
           <option value="tinto">Tinto</option>
-          <option value="blanco">Blanco</option>          
+          <option value="blanco">Blanco</option>
           <option value="espumoso">Espumoso</option>
           <option value="rosado">Rosado</option>
           <option value="generoso">Generoso</option>
@@ -388,7 +409,6 @@ export default function Home() {
         <button
           onClick={showAllByType}
           className="block w-1/2 mx-auto bg-pink-500 text-white p-2 rounded mt-2 hover:bg-pink-900 text-sm"
-
         >
           VER TODOS
         </button>
@@ -582,7 +602,9 @@ export default function Home() {
                     </button>
                     <button
                       onClick={handleNext}
-                      disabled={currentIndex === allRecommendations.length - 1}
+                      disabled={
+                        currentIndex === allRecommendations.length - 1
+                      }
                       className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       →
