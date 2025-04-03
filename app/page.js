@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Papa from "papaparse";
-import { FiInfo } from 'react-icons/fi';
-
+import { FiInfo } from "react-icons/fi";
 
 export default function Home() {
+  // ESTADOS
   const [preferences, setPreferences] = useState({
     taste: "",
     foodPairing: [],
@@ -21,10 +21,11 @@ export default function Home() {
   const [modalWine, setModalWine] = useState(null);
   const [enlargedImage, setEnlargedImage] = useState(null);
 
-  // Nuevos estados para los modales adicionales
+  // Modales adicionales
   const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [showGustosModal, setShowGustosModal] = useState(false);
 
+  // CARGA DE DATOS DESDE GOOGLE SHEETS
   useEffect(() => {
     fetch(
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEiys_b9l7KaxcC4Qz5qkBr8u4sdm5vzcMOIsBwI2SNKIcYXlDCRR9doWQYwloTEdu1dZRcVzXQCfy/pub?gid=0&single=true&output=csv"
@@ -34,8 +35,7 @@ export default function Home() {
         Papa.parse(csv, {
           header: true,
           complete: (result) => {
-            console.log("Datos obtenidos desde Google Sheets:", result.data);
-            // Filtrar filas con 'Nombre' y stock mayor a 0
+            // Filtrar solo filas con 'Nombre' y stock > 0
             setWines(
               result.data.filter(
                 (wine) => wine.Nombre && parseInt(wine.Stock, 10) > 0
@@ -47,9 +47,11 @@ export default function Home() {
       .catch((error) => console.error("Error al cargar datos: ", error));
   }, []);
 
+  // FUNCIONES AUXILIARES
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "foodPairing") {
+      // Manejo de checks de maridaje
       setPreferences((prev) => ({
         ...prev,
         foodPairing: prev.foodPairing.includes(value)
@@ -69,7 +71,30 @@ export default function Home() {
     setShowWarning(false);
   };
 
+  // Función para obtener imagen según el tipo de vino
+  const getWineImage = (wineType) => {
+    if (!wineType) return "/images/desconocido.png";
+    const lowerType = wineType.trim().toLowerCase();
+    if (lowerType === "tinto") return "/images/tinto.png";
+    if (lowerType === "blanco") return "/images/blanco.png";
+    if (lowerType === "espumoso") return "/images/espumoso.png";
+    if (lowerType === "rosado") return "/images/rosado.png";
+    if (lowerType === "generoso") return "/images/generoso.png";
+    if (lowerType === "dulce") return "/images/dulce.png";
+    return "/images/desconocido.png";
+  };
+
+  // Función para mostrar el precio (por copa solo en generoso)
+  const renderPrecio = (precio, tipo) => {
+    if (!precio) return "No especificado";
+    return `${precio}${
+      tipo.trim().toLowerCase() === "generoso" ? " por copa" : ""
+    }`;
+  };
+
+  // Función principal para recomendaciones
   const getRecommendations = () => {
+    // Verificar que el usuario no deje todo en blanco
     if (
       !preferences.taste &&
       !preferences.foodPairing.length &&
@@ -82,16 +107,17 @@ export default function Home() {
       return;
     }
 
-    // Filtrar vinos disponibles (stock > 0)
+    // Filtrar vinos disponibles
     const availableWines = wines.filter(
       (wine) => parseInt(wine.Stock, 10) > 0
     );
 
+    // Calcular la puntuación (score)
     const scoredWines = availableWines.map((wine) => {
       let score = 0;
       const gusto = wine.Gusto ? wine.Gusto.trim().toLowerCase() : "";
 
-      // Obtener los valores exactos de "Comida 1" y "Comida 2" dividiéndolos por comas
+      // Comidas (maridajes) separadas por comas
       const comida1 = wine["Comida 1"]
         ? wine["Comida 1"].trim().toLowerCase()
         : "";
@@ -116,14 +142,14 @@ export default function Home() {
       // Coincidencia de gusto
       if (gusto === preferences.taste.trim().toLowerCase()) score++;
 
-      // Coincidencia en "maridaje"
+      // Coincidencia en maridaje (Comida 1 y Comida 2)
       preferences.foodPairing.forEach((food) => {
         const f = food.trim().toLowerCase();
         if (comida1Array.map((s) => s.toLowerCase()).includes(f)) score++;
         if (comida2Array.map((s) => s.toLowerCase()).includes(f)) score++;
       });
 
-      // Coincidencia de tipo (si no es "sin preferencia")
+      // Coincidencia de tipo (si no es sin preferencia)
       if (
         preferences.type &&
         preferences.type.trim().toLowerCase() !== "sin preferencia" &&
@@ -132,15 +158,13 @@ export default function Home() {
         score++;
       }
 
-      // Sumar puntos por denominacion grupo (sólo para tinto, blanco y espumoso)
+      // Coincidencia de origen (denominación) para tinto, blanco y espumoso
       if (
         preferences.origin &&
-        ["tinto", "blanco", "espumoso"].includes(tipo)
+        ["tinto", "blanco", "espumoso"].includes(tipo) &&
+        denominacionGrupo === preferences.origin.trim().toLowerCase()
       ) {
-        if (
-          denominacionGrupo === preferences.origin.trim().toLowerCase()
-        )
-          score++;
+        score++;
       }
 
       // Coincidencia de presupuesto
@@ -151,15 +175,19 @@ export default function Home() {
         score++;
       }
 
-      // Sumar el valor de la columna "Recomendacion"
+      // Sumar valor de columna 'Recomendacion'
       const extra = parseInt(wine["Recomendacion"], 10);
       score += isNaN(extra) ? 0 : extra;
 
-      console.log(`Vino: ${wine.Nombre}, Score: ${score}`);
       return { ...wine, score };
     });
 
-    // Filtrar únicamente por tipo (si no es "sin preferencia") y presupuesto
+    // Mostrar por consola los vinos con su score
+    scoredWines.forEach((wine) => {
+    console.log(`• ${wine.Nombre}: ${wine.score} puntos`);
+    });
+
+    // Filtrar por tipo (si no es sin preferencia) y presupuesto
     let filteredWines = scoredWines;
     if (
       preferences.type &&
@@ -181,10 +209,10 @@ export default function Home() {
       );
     }
 
-    // Ordenar por puntuación de mayor a menor
+    // Ordenar de mayor a menor puntuación
     filteredWines.sort((a, b) => b.score - a.score);
 
-    // Si no hay vinos con los filtros aplicados, mostrar ventana de advertencia
+    // Si no hay vinos tras filtrar
     if (filteredWines.length === 0) {
       setWarningMessage(
         "Ningún vino con los filtros aplicados, modifica el tipo y/o rango de precio. 😇"
@@ -193,21 +221,25 @@ export default function Home() {
       return;
     }
 
+    // Guardamos todas las recomendaciones y reseteamos la cuenta a 2
     setAllRecommendations(filteredWines);
     setDisplayCount(2);
   };
 
-  // Función para mostrar todos los vinos del tipo seleccionado ordenados por precio descendente
+  // Función para mostrar todos los vinos del tipo
   const showAllByType = () => {
     if (
       !preferences.type ||
       preferences.type.trim() === "" ||
       preferences.type.trim().toLowerCase() === "sin preferencia"
     ) {
-      setWarningMessage("Selecciona un tipo de vino para que te pueda ayudar. 🙂");
+      setWarningMessage(
+        "Selecciona un tipo de vino para que te pueda ayudar. 🙂"
+      );
       setShowWarning(true);
       return;
     }
+    // Filtrar y ordenar por precio descendente
     const availableWines = wines.filter(
       (wine) =>
         parseInt(wine.Stock, 10) > 0 &&
@@ -224,27 +256,17 @@ export default function Home() {
     setDisplayCount(availableWines.length);
   };
 
+  // Cerrar ventana de advertencia
   const closeWarning = () => {
     setShowWarning(false);
   };
 
-  const getWineImage = (wineType) => {
-    if (!wineType) return "/images/desconocido.png";
-    const lowerType = wineType.trim().toLowerCase();
-    if (lowerType === "tinto") return "/images/tinto.png";
-    if (lowerType === "blanco") return "/images/blanco.png";
-    if (lowerType === "espumoso") return "/images/espumoso.png";
-    if (lowerType === "rosado") return "/images/rosado.png";
-    if (lowerType === "generoso") return "/images/generoso.png";
-    if (lowerType === "dulce") return "/images/dulce.png";
-    return "/images/desconocido.png";
-  };
-
+  // Mostrar más vinos (aumentar displayCount)
   const showMore = () => {
     setDisplayCount((prev) => prev + 3);
   };
 
-  // Funciones para el modal de la ficha del vino
+  // Abrir y cerrar modal de ficha de vino
   const openModal = (wine) => {
     setModalWine(wine);
   };
@@ -273,15 +295,15 @@ export default function Home() {
     }
   };
 
-  // Calcular el puntaje máximo para la barra de progreso
+  // Para la barra de progreso (score)
   const maxScore =
     allRecommendations.length > 0
       ? Math.max(...allRecommendations.map((wine) => wine.score))
       : 0;
 
+  // RENDER
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-orange-500 p-2">
-      
       {/* Logo con onClick para mostrar el modal de la dueña */}
       <img
         src="/images/logo.png"
@@ -290,38 +312,47 @@ export default function Home() {
         onClick={() => setShowOwnerModal(true)}
       />
 
-      {/* Formulario de preferencias */}
+      {/* FORMULARIO DE PREFERENCIAS */}
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md border border-orange-300">
-        {/* Modificamos la etiqueta de Gusto para que incluya un link de información */}
+        {/* Gusto (con icono de información) */}
         <div className="flex items-center mb-2">
-  <span className="font-bold text-orange-700">Gusto:</span>
-  <FiInfo
-    className="ml-2 text-blue-500 cursor-pointer"
-    size={18}
-    onClick={() => setShowGustosModal(true)}
-  />
-</div>
-
+          <span className="font-bold text-orange-700">Gusto:</span>
+          <FiInfo
+            className="ml-2 text-blue-500 cursor-pointer"
+            size={18}
+            onClick={() => setShowGustosModal(true)}
+          />
+        </div>
         <select
           name="taste"
           onChange={handleChange}
           className="w-full p-2 mb-4 border rounded border-orange-400 text-black appearance-none"
         >
           <option value="">¿Cómo te gustan los vinos?</option>
-          <option value="seco">Seco</option>
-          <option value="afrutado">Afrutado</option>
-          <option value="fresco">Fresco</option>
-          <option value="dulce">Dulce</option>
-          <option value="cuerpo">Cuerpo</option>
           <option value="goloso">Goloso</option>
-          <option value="mineral">Mineral</option>
-          <option value="tánico">Tánico</option>
-          <option value="mineral">Mineral</option>
+          <option value="fresco">Fresco</option>
+          <option value="afrutado">Afrutado</option>
+          <option value="seco">Seco</option>
+          <option value="cuerpo">Cuerpo</option>
+          <option value="dulce">Dulce</option>
+          <option value="balsámico">Balsámico</option>
+          <option value="floral">Floral</option>
+          <option value="especiado">Especiado</option>
         </select>
 
+        {/* Maridaje (8 opciones en 2 filas de 4) */}
         <label className="block font-bold mb-2 text-orange-700">Maridaje:</label>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {["entrantes", "carnes", "pescado", "arroces", "mariscos", "postres"].map((food) => (
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {[
+            "entrantes",
+            "carnes",
+            "mariscos",
+            "postres",
+            "arroces",
+            "pescados",
+            "quesos",
+            "all in",
+          ].map((food) => (
             <label
               key={food}
               className="flex items-center space-x-2 text-orange-700"
@@ -340,6 +371,7 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Tipo */}
         <label className="block font-bold mb-2 text-orange-700">Tipo:</label>
         <select
           name="type"
@@ -356,6 +388,7 @@ export default function Home() {
           <option value="dulce">Dulce</option>
         </select>
 
+        {/* Denominación de origen */}
         <label className="block font-bold mb-2 text-orange-700">
           Denominación de origen:
         </label>
@@ -381,7 +414,8 @@ export default function Home() {
             <>
               <option value="d.o. alicante">D.O. Alicante</option>
               <option value="d.o. ribera del duero">D.O. Ribera del Duero</option>
-              <option value="d.o. rioja">D.O. Rioja</option>
+              <option value="d.o.ca rioja">D.O.Ca. Rioja</option>
+              <option value="internacional">INTERNACIONAL</option>
               <option value="otros">Otros</option>
             </>
           )}
@@ -389,19 +423,21 @@ export default function Home() {
             <>
               <option value="d.o. alicante">D.O. Alicante</option>
               <option value="d.o. rueda">D.O. Rueda</option>
-              <option value="d.o. galicia">D.O. Galicia</option>
+              <option value="galicia">Galicia</option>
+              <option value="internacional">INTERNACIONAL</option>
               <option value="otros">Otros</option>
             </>
           )}
           {preferences.type.trim().toLowerCase() === "espumoso" && (
             <>
-              <option value="cava">Cava</option>
-              <option value="champagne">Champagne</option>
-              <option value="corpinnat">Corpinnat</option>
+              <option value="d.o. cava">D.O. Cava</option>
+              <option value="a.o.c. champagne">A.O.C. Champagne</option>
+              <option value="corpinnat">CORPINNAT</option>
             </>
           )}
         </select>
 
+        {/* Precio */}
         <label className="block font-bold mb-2 text-orange-700">Precio:</label>
         <select
           name="budget"
@@ -414,13 +450,13 @@ export default function Home() {
           <option value="premium">Premium</option>
         </select>
 
+        {/* BOTONES */}
         <button
           onClick={getRecommendations}
           className="w-full bg-orange-500 text-white p-3 rounded mt-4 hover:bg-orange-900"
         >
           MI RECOMENDACIÓN
         </button>
-        {/* Botón extra para mostrar todos los vinos del tipo seleccionado */}
         <button
           onClick={showAllByType}
           className="block w-1/2 mx-auto bg-orange-500 text-white p-2 rounded mt-2 hover:bg-orange-900 text-sm"
@@ -429,7 +465,7 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Modal de advertencia */}
+      {/* MODAL DE ADVERTENCIA */}
       {showWarning && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-4 rounded-lg shadow-lg text-center">
@@ -446,7 +482,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Recomendaciones */}
+      {/* LISTA DE RECOMENDACIONES */}
       {allRecommendations.length > 0 && (
         <div className="mt-6 bg-white p-4 rounded-lg shadow-lg border border-orange-300 w-full max-w-md">
           <ul className="mt-2">
@@ -458,7 +494,6 @@ export default function Home() {
                     alt={wine.Tipo}
                     className="w-8 h-8 object-cover"
                   />
-                  {/* Nombre con añada */}
                   <p
                     className="text-orange-800 font-semibold cursor-pointer"
                     onClick={() => openModal(wine)}
@@ -466,28 +501,17 @@ export default function Home() {
                     {wine.Nombre} {wine.Añada}
                   </p>
                 </div>
-
                 <p className="text-sm text-orange-500 italic mt-1">
                   {wine.Descripcion ? wine.Descripcion : ""}
                 </p>
-                {/* Línea extra: Denominación + Variedad uva */}
                 <p className="text-sm text-gray-600 mt-1">
                   {wine.Denominacion} {wine["Variedad uva"]}
                 </p>
-
                 <p className="text-sm text-gray-600 mt-1">
-                  Precio:{" "}
-                  {wine.Precio
-                    ? `${wine.Precio}${
-                        ["dulce", "generoso"].includes(
-                          wine.Tipo.trim().toLowerCase()
-                        )
-                          ? " por copa"
-                          : ""
-                      }`
-                    : "No especificado"}
+                  Precio: {renderPrecio(wine.Precio, wine.Tipo)}
                 </p>
 
+                {/* Barra de progreso según score */}
                 <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
                   <div
                     className="bg-orange-500 h-3 rounded-full"
@@ -516,20 +540,17 @@ export default function Home() {
         </div>
       )}
 
-      {/* Modal de ficha del vino */}
+      {/* MODAL DE FICHA DE VINO */}
       {modalWine && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-4 rounded-lg shadow-lg max-w-xl w-full">
-            {/* Cabecera: Nombre y Descripción centrados */}
             <h3 className="text-xl font-bold text-orange-700 mb-1 text-center">
               {modalWine.Nombre} {modalWine.Añada}
             </h3>
             <p className="text-sm text-orange-500 mb-4 text-center">
               {modalWine.Descripcion}
             </p>
-            {/* Sección de imagen e información en fila */}
             <div className="flex flex-col md:flex-row gap-4 items-center">
-              {/* Imagen */}
               <div className="flex-shrink-0">
                 <div className="w-24 h-24">
                   <img
@@ -544,12 +565,9 @@ export default function Home() {
                   />
                 </div>
               </div>
-              {/* Detalles */}
               <div className="flex-grow">
                 <p className="text-sm mb-0">
-                  <strong className="text-black font-bold">
-                    Tipo:
-                  </strong>{" "}
+                  <strong className="text-black font-bold">Tipo:</strong>{" "}
                   <span className="text-orange-500 font-normal">
                     {modalWine.Tipo} {modalWine.Barrica}
                   </span>
@@ -563,13 +581,31 @@ export default function Home() {
                   </span>
                 </p>
                 <p className="text-sm mb-0">
-                  <strong className="text-black font-bold">
-                    Variedad:
-                  </strong>{" "}
+                  <strong className="text-black font-bold">Variedad:</strong>{" "}
                   <span className="text-orange-500 font-normal">
                     {modalWine["Variedad uva"]}
                   </span>
                 </p>
+                <p className="text-sm mb-0">
+                  <strong className="text-black font-bold">Gusto:</strong>{" "}
+                  <span className="text-orange-500 font-normal">
+                    {modalWine.Gusto}
+                  </span>
+                </p>
+                {/* Nuevo campo Maridajes */}
+                {(() => {
+                  // Aquí definimos la variable "maridajes"
+                  const maridajes = [modalWine["Comida 1"], modalWine["Comida 2"]]
+                    .filter(Boolean) // Elimina valores falsy (como undefined o "")
+                    .join(" y ");
+                  return (
+                    <p className="text-sm mb-0">
+                      <strong className="text-black font-bold">Maridajes:</strong>{" "}
+                      <span className="text-orange-500 font-normal">{maridajes}</span>
+                    </p>
+                  );
+                })()}
+                {/*
                 <p className="text-sm mb-0">
                   <strong className="text-black font-bold">
                     Maceración:
@@ -578,23 +614,15 @@ export default function Home() {
                     {modalWine.Maceracion}
                   </span>
                 </p>
+                */}
                 <p className="text-sm">
                   <strong className="text-black font-bold">Precio:</strong>{" "}
                   <span className="text-orange-500 font-normal">
-                    {modalWine.Precio
-                      ? `${modalWine.Precio}${
-                          ["dulce", "generoso"].includes(
-                            modalWine.Tipo.trim().toLowerCase()
-                          )
-                            ? " por copa"
-                            : ""
-                        }`
-                      : "No especificado"}
+                    {renderPrecio(modalWine.Precio, modalWine.Tipo)}
                   </span>
                 </p>
               </div>
             </div>
-            {/* Botones de navegación */}
             <div className="flex justify-center mt-4 space-x-4">
               {(() => {
                 const currentIndex = allRecommendations.findIndex(
@@ -617,7 +645,9 @@ export default function Home() {
                     </button>
                     <button
                       onClick={handleNext}
-                      disabled={currentIndex === allRecommendations.length - 1}
+                      disabled={
+                        currentIndex === allRecommendations.length - 1
+                      }
                       className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       →
@@ -630,7 +660,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Modal de imagen ampliada */}
+      {/* MODAL DE IMAGEN AMPLIADA */}
       {enlargedImage && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80"
@@ -644,76 +674,83 @@ export default function Home() {
         </div>
       )}
 
-      {/* Modal de la dueña de la bodega */}
+      {/* MODAL DE LA DUEÑA DE LA BODEGA */}
       {showOwnerModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-4 rounded-lg shadow-lg text-center max-w-lg">
-            <h3 className="text-xl font-bold text-orange-700">Ángela Rodríguez Ruiz</h3>
-            <h3 className="text-sm italic text-orange-700 mb-3">11 de Enero de 1990, Alicante</h3>
+            <h3 className="text-xl font-bold text-orange-700">
+              Ángela Rodríguez Ruiz
+            </h3>
+            <h3 className="text-sm italic text-orange-700 mb-3">
+              11 de Enero de 1990, Alicante
+            </h3>
             <img
               src="/images/Angela.png"
               alt="Dueña de la bodega"
               className="w-32 h-32 rounded-full mx-auto mb-4"
-            />           
+            />
             <p
               className="text-sm text-gray-700 mb-4"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
-              Ángela empezó su trayectoria profesional en el 2012 como bartender. El duende del vino la incitó a este maravilloso e infinito mundo en el 2016, con otra gran noticia.
+              Ángela empezó su trayectoria profesional en el 2012 como bartender.
+              El duende del vino la incitó a este maravilloso e infinito mundo en
+              el 2016, con otra gran noticia.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
               - 2018 se gradúa como Sumiller internacional por la ESHOB.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
-              - 2019 gana su primer campeonato como mejor sumiller de Alicante y única mujer por el momento, título que se mantiene hasta hoy.
+              - 2019 gana su primer campeonato como mejor sumiller de Alicante y
+              única mujer por el momento, título que se mantiene hasta hoy.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
               2019 formadora de vinos y vinagres de Montilla Moriles.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
-              - 2021 y 2022 segundo puesto como mejor sumiller de la Comunidad Valenciana.
+              - 2021 y 2022 segundo puesto como mejor sumiller de la Comunidad
+              Valenciana.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
               - 2022 WSET 2 y WSET 3 en la escuela de catas.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
               - 2023 formador homologado vinos Alicante.
             </p>
             <p
               className="text-sm text-gray-700 mb-4"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
               - 2024 formador homologado DOP vinos Naranja del Condado de Huelva.
-            </p>            
+            </p>
             <p
               className="text-sm text-gray-700 mb-4"
-              style={{ textAlign: 'justify' }}
+              style={{ textAlign: "justify" }}
             >
-              En 2024 abre su propio salón de casa para todos ustedes, con un top 100 de mejor sumiller de España bajo el brazo, acercando de forma canalla el fabuloso mundo vitivinícola con profesionalidad, cariño y sentimiento.
+              En 2024 abre su propio salón de casa para todos ustedes, con un top
+              100 de mejor sumiller de España bajo el brazo, acercando de forma
+              canalla el fabuloso mundo vitivinícola con profesionalidad, cariño
+              y sentimiento.
             </p>
-            <p
-              className="text-sm text-gray-700 mb-2"              
-            >
-              "Poco vino me parece"
-            </p>
+            <p className="text-sm text-gray-700 mb-2">"Poco vino me parece"</p>
             <button
               onClick={() => setShowOwnerModal(false)}
               className="mt-4 bg-orange-500 text-white p-2 rounded hover:bg-orange-600"
@@ -724,39 +761,44 @@ export default function Home() {
         </div>
       )}
 
-
-      {/* Modal de explicación de los Gustos */}
+      {/* MODAL DE EXPLICACIÓN DE GUSTOS */}
       {showGustosModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-4 rounded-lg shadow-lg text-center max-w-md">
-            <h3 className="text-xl font-bold text-orange-700 mb-4">Explicación de los Gustos</h3>
+            <h3 className="text-xl font-bold text-orange-700 mb-4">
+              Explicación de los Gustos
+            </h3>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Seco:</strong> Vino con poca o ninguna sensación de dulzor.
-            </p>
-            <p className="text-sm text-gray-700 mb-2">
-              <strong>Afrutado:</strong> Vino con notas intensas de frutas.
+              <strong>Goloso:</strong> Vino agradable y atractivo al paladar.
             </p>
             <p className="text-sm text-gray-700 mb-2">
               <strong>Fresco:</strong> Vino que destaca por su acidez y vivacidad.
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Dulce:</strong> Vino con un toque de dulzor, residuo de azúcar.
+              <strong>Afrutado:</strong> Vino con notas intensas de frutas.
+            </p>
+            <p className="text-sm text-gray-700 mb-2">
+              <strong>Seco:</strong> Vino con poca o ninguna sensación de dulzor.
             </p>
             <p className="text-sm text-gray-700 mb-2">
               <strong>Cuerpo:</strong> Vino con estructura y peso en boca.
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Goloso:</strong> Vino agradable y atractivo al paladar.
+              <strong>Dulce:</strong> Vino con un toque de dulzor, residuo de
+              azúcar.
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Floral:</strong> Vino que exhibe aromas y matices que evocan flores, aportando una sensación delicada, elegante y fragante.
+              <strong>Balsámico:</strong> Vino con aromas que recuerdan a hierbas
+              aromáticas o resinas.
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Tánico:</strong> Vino con taninos pronunciados que aportan estructura.
+              <strong>Floral:</strong> Vino que exhibe aromas y matices que
+              evocan flores.
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Mineral:</strong> Vino que transmite notas minerales, a menudo asociadas al terroir.
-            </p>            
+              <strong>Especiado:</strong> Vino con notas de especias como
+              pimienta, clavo o canela.
+            </p>
             <button
               onClick={() => setShowGustosModal(false)}
               className="mt-4 bg-orange-500 text-white p-2 rounded hover:bg-orange-600"
