@@ -59,11 +59,16 @@ export default function Home() {
           : [...prev.foodPairing, value],
       }));
     } else if (name === "type") {
-      // Al cambiar el tipo, se resetea la denominación (origin)
+      // Al cambiar el tipo, se resetea la denominación (origin) y, si es "generoso" o "dulce", se limpia el presupuesto
       setPreferences((prev) => ({
         ...prev,
         type: value,
         origin: "",
+        budget:
+          value.trim().toLowerCase() === "generoso" ||
+          value.trim().toLowerCase() === "dulce"
+            ? ""
+            : prev.budget,
       }));
     } else {
       setPreferences((prev) => ({ ...prev, [name]: value }));
@@ -184,7 +189,7 @@ export default function Home() {
 
     // Mostrar por consola los vinos con su score
     scoredWines.forEach((wine) => {
-    console.log(`• ${wine.Nombre}: ${wine.score} puntos`);
+      console.log(`• ${wine.Nombre}: ${wine.score} puntos`);
     });
 
     // Filtrar por tipo (si no es sin preferencia) y presupuesto
@@ -308,7 +313,7 @@ export default function Home() {
       <img
         src="/images/logo.png"
         alt="Logo de la bodega"
-        className="h-32 w-auto pb-1 cursor-pointer"
+        className="h-24 w-auto pb-1 cursor-pointer"
         onClick={() => setShowOwnerModal(true)}
       />
 
@@ -341,7 +346,9 @@ export default function Home() {
         </select>
 
         {/* Maridaje (8 opciones en 2 filas de 4) */}
-        <label className="block font-bold mb-2 text-orange-700">Maridaje:</label>
+        <label className="block font-bold mb-2 text-orange-700">
+          Maridaje:
+        </label>
         <div className="grid grid-cols-4 gap-2 mb-4">
           {[
             "entrantes",
@@ -413,7 +420,9 @@ export default function Home() {
           {preferences.type.trim().toLowerCase() === "tinto" && (
             <>
               <option value="d.o. alicante">D.O. Alicante</option>
-              <option value="d.o. ribera del duero">D.O. Ribera del Duero</option>
+              <option value="d.o. ribera del duero">
+                D.O. Ribera del Duero
+              </option>
               <option value="d.o.ca rioja">D.O.Ca. Rioja</option>
               <option value="internacional">INTERNACIONAL</option>
               <option value="otros">Otros</option>
@@ -442,6 +451,12 @@ export default function Home() {
         <select
           name="budget"
           onChange={handleChange}
+          value={preferences.budget}
+          disabled={
+            ["generoso", "dulce"].includes(
+              preferences.type.trim().toLowerCase()
+            )
+          }
           className="w-full p-2 mb-4 border rounded border-orange-400 text-black appearance-none"
         >
           <option value="">¿Qué rango de precios?</option>
@@ -594,27 +609,23 @@ export default function Home() {
                 </p>
                 {/* Nuevo campo Maridajes */}
                 {(() => {
-                  // Aquí definimos la variable "maridajes"
-                  const maridajes = [modalWine["Comida 1"], modalWine["Comida 2"]]
-                    .filter(Boolean) // Elimina valores falsy (como undefined o "")
+                  const maridajes = [
+                    modalWine["Comida 1"],
+                    modalWine["Comida 2"],
+                  ]
+                    .filter(Boolean)
                     .join(" y ");
                   return (
                     <p className="text-sm mb-0">
-                      <strong className="text-black font-bold">Maridajes:</strong>{" "}
-                      <span className="text-orange-500 font-normal">{maridajes}</span>
+                      <strong className="text-black font-bold">
+                        Maridajes:
+                      </strong>{" "}
+                      <span className="text-orange-500 font-normal">
+                        {maridajes}
+                      </span>
                     </p>
                   );
                 })()}
-                {/*
-                <p className="text-sm mb-0">
-                  <strong className="text-black font-bold">
-                    Maceración:
-                  </strong>{" "}
-                  <span className="text-orange-500 font-normal">
-                    {modalWine.Maceracion}
-                  </span>
-                </p>
-                */}
                 <p className="text-sm">
                   <strong className="text-black font-bold">Precio:</strong>{" "}
                   <span className="text-orange-500 font-normal">
@@ -710,7 +721,7 @@ export default function Home() {
               - 2019 gana su primer campeonato como mejor sumiller de Alicante y
               única mujer por el momento, título que se mantiene hasta hoy. Obtiene 
               el título de formadora de vinos y vinagres de Montilla Moriles.
-            </p>      
+            </p>
             <p
               className="text-sm text-gray-700 mb-2"
               style={{ textAlign: "justify" }}
@@ -778,8 +789,7 @@ export default function Home() {
               <strong>Cuerpo:</strong> Vino con estructura y peso en boca.
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              <strong>Dulce:</strong> Vino con un toque de dulzor, residuo de
-              azúcar.
+              <strong>Dulce:</strong> Vino con un toque de dulzor, residuo de azúcar.
             </p>
             <p className="text-sm text-gray-700 mb-2">
               <strong>Balsámico:</strong> Vino con aromas que recuerdan a hierbas
