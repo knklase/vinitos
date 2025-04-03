@@ -687,7 +687,7 @@ export default function Home() {
             <img
               src="/images/Angela.png"
               alt="Dueña de la bodega"
-              className="w-32 h-32 rounded-full mx-auto mb-4"
+              className="w-32 h-32 rounded-full mx-auto mb-3"
             />
             <p
               className="text-sm text-gray-700 mb-4"
@@ -701,21 +701,16 @@ export default function Home() {
               className="text-sm text-gray-700 mb-2"
               style={{ textAlign: "justify" }}
             >
-              - 2018 se gradúa como Sumiller internacional por la ESHOB.
+              - 2018 se gradúa como sumiller internacional (ESHOB).
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
               style={{ textAlign: "justify" }}
             >
               - 2019 gana su primer campeonato como mejor sumiller de Alicante y
-              única mujer por el momento, título que se mantiene hasta hoy.
-            </p>
-            <p
-              className="text-sm text-gray-700 mb-2"
-              style={{ textAlign: "justify" }}
-            >
-              2019 formadora de vinos y vinagres de Montilla Moriles.
-            </p>
+              única mujer por el momento, título que se mantiene hasta hoy. Obtiene 
+              el título de formadora de vinos y vinagres de Montilla Moriles.
+            </p>      
             <p
               className="text-sm text-gray-700 mb-2"
               style={{ textAlign: "justify" }}
@@ -746,7 +741,7 @@ export default function Home() {
               style={{ textAlign: "justify" }}
             >
               En 2024 abre su propio salón de casa para todos ustedes, con un top
-              100 de mejor sumiller de España bajo el brazo, acercando de forma
+              100 mejor sumiller de España bajo el brazo, acercando de forma
               canalla el fabuloso mundo vitivinícola con profesionalidad, cariño
               y sentimiento.
             </p>
