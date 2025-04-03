@@ -313,7 +313,7 @@ export default function Home() {
       />
 
       {/* FORMULARIO DE PREFERENCIAS */}
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md border border-orange-300">
+      <div className="bg-white p-3 rounded-lg shadow-lg w-full max-w-md border border-orange-300">
         {/* Gusto (con icono de información) */}
         <div className="flex items-center mb-2">
           <span className="font-bold text-orange-700">Gusto:</span>
@@ -355,7 +355,7 @@ export default function Home() {
           ].map((food) => (
             <label
               key={food}
-              className="flex items-center space-x-2 text-orange-700"
+              className="flex items-center space-x-1 text-orange-700"
             >
               <input
                 type="checkbox"
