@@ -303,12 +303,12 @@ export default function Home() {
 
   // RENDER
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-orange-500 p-2">
+    <div className="flex flex-col items-center justify-start min-h-screen bg-orange-500 pt-4 pb-2 px-2">
       {/* Logo con onClick para mostrar el modal de la dueña */}
       <img
         src="/images/logo.png"
         alt="Logo de la bodega"
-        className="h-40 w-auto pb-2 cursor-pointer"
+        className="h-36 w-auto pb-1 cursor-pointer"
         onClick={() => setShowOwnerModal(true)}
       />
 
@@ -453,7 +453,7 @@ export default function Home() {
         {/* BOTONES */}
         <button
           onClick={getRecommendations}
-          className="w-full bg-orange-500 text-white p-3 rounded mt-4 hover:bg-orange-900"
+          className="w-full bg-orange-500 text-white p-3 rounded mt-2 hover:bg-orange-900"
         >
           MI RECOMENDACIÓN
         </button>
@@ -677,7 +677,7 @@ export default function Home() {
       {/* MODAL DE LA DUEÑA DE LA BODEGA */}
       {showOwnerModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-4 rounded-lg shadow-lg text-center max-w-lg">
+          <div className="bg-white p-4 rounded-lg shadow-lg text-center max-w-md">
             <h3 className="text-xl font-bold text-orange-700">
               Ángela Rodríguez Ruiz
             </h3>
