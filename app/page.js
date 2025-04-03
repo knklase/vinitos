@@ -308,7 +308,7 @@ export default function Home() {
       <img
         src="/images/logo.png"
         alt="Logo de la bodega"
-        className="h-36 w-auto pb-1 cursor-pointer"
+        className="h-32 w-auto pb-1 cursor-pointer"
         onClick={() => setShowOwnerModal(true)}
       />
 
@@ -715,8 +715,7 @@ export default function Home() {
               className="text-sm text-gray-700 mb-2"
               style={{ textAlign: "justify" }}
             >
-              - 2021 y 2022 segundo puesto como mejor sumiller de la Comunidad
-              Valenciana.
+              - 2021 y 2022 segundo puesto como mejor sumiller de la C.V.
             </p>
             <p
               className="text-sm text-gray-700 mb-2"
@@ -750,7 +749,7 @@ export default function Home() {
               onClick={() => setShowOwnerModal(false)}
               className="mt-4 bg-orange-500 text-white p-2 rounded hover:bg-orange-600"
             >
-              OK
+              🍷
             </button>
           </div>
         </div>
